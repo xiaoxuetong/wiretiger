@@ -6,12 +6,12 @@ import io.netty.channel.ChannelPromise;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public abstract class AbstractPipeHandlerNew extends ChannelDuplexHandler {
+public abstract class AbstractPipeHandler extends ChannelDuplexHandler {
 
 	protected FrontPipe front;
 	protected BackPipe back;
 	
-	public AbstractPipeHandlerNew(FrontPipe front, BackPipe back) {
+	public AbstractPipeHandler(FrontPipe front, BackPipe back) {
 		this.front = front;
 		this.back = back;
 	}
@@ -90,4 +90,12 @@ public abstract class AbstractPipeHandlerNew extends ChannelDuplexHandler {
 	public abstract void exceptionCaught4Client(ChannelHandlerContext ctx, Throwable cause) throws Exception;
 	
 	public abstract void exceptionCaught4Server(ChannelHandlerContext ctx, Throwable cause) throws Exception;
+
+	public FrontPipe getFront() {
+		return front;
+	}
+
+	public BackPipe getBack() {
+		return back;
+	}
 }

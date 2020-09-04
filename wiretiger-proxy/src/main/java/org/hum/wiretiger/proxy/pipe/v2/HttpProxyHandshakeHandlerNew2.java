@@ -4,6 +4,7 @@ import org.hum.wiretiger.common.constant.HttpConstant;
 import org.hum.wiretiger.proxy.pipe.WtPipeManager;
 import org.hum.wiretiger.proxy.pipe.bean.WtPipeHolder;
 import org.hum.wiretiger.proxy.pipe.constant.Constant;
+import org.hum.wiretiger.proxy.pipe.enumtype.Protocol;
 import org.hum.wiretiger.proxy.pipe.event.EventHandler;
 import org.hum.wiretiger.ssl.HttpSslContextFactory;
 
@@ -25,9 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Sharable
 public class HttpProxyHandshakeHandlerNew2 extends SimpleChannelInboundHandler<HttpRequest> {
-
-	private static final String ConnectedLine = "HTTP/1.1 200 Connection established\r\n\r\n";
-	private static final String HTTPS_HANDSHAKE_METHOD = "CONNECT";
 	
 	private EventHandler eventHandler;
 	
@@ -37,11 +35,11 @@ public class HttpProxyHandshakeHandlerNew2 extends SimpleChannelInboundHandler<H
 	
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.fireChannelActive();
-        // init pipe
+        // 在第一时间初始化Pipe
         WtPipeHolder pipeHolder = WtPipeManager.get().create(ctx.channel());
         ctx.channel().attr(AttributeKey.valueOf(Constant.ATTR_PIPE)).set(pipeHolder);
         eventHandler.fireConnectEvent(pipeHolder);
+        ctx.fireChannelActive();
     }
 
 	@Override
@@ -55,12 +53,12 @@ public class HttpProxyHandshakeHandlerNew2 extends SimpleChannelInboundHandler<H
 		// wrap pipeholder
 		WtPipeHolder pipeHolder = (WtPipeHolder) client2ProxyCtx.channel().attr(AttributeKey.valueOf(Constant.ATTR_PIPE)).get();
 		
-    	if (HTTPS_HANDSHAKE_METHOD.equalsIgnoreCase(request.method().name())) {
+    	if (HttpConstant.HTTPS_HANDSHAKE_METHOD.equalsIgnoreCase(request.method().name())) {
+    		pipeHolder.setProtocol(Protocol.HTTPS);
     		log.info("HTTPS connect");
-    		// 根据域名颁发证书
-			BackPipe back = new BackPipe(host, port, true);
-    		FullPipe full = new FullPipe(new FrontPipe(client2ProxyCtx.channel()), back, eventHandler, pipeHolder);
-    		// SSL
+    		// 建立完成Pipe
+    		FullPipe full = new FullPipe(new FrontPipe(client2ProxyCtx.channel()), new BackPipe(host, port, true), eventHandler, pipeHolder);
+    		// SSL部分：根据域名颁发证书
     		SslHandler sslHandler = new SslHandler(HttpSslContextFactory.createSSLEngine(host));
 			sslHandler.handshakeFuture().addListener(new GenericFutureListener<Future<? super Channel>>() {
 				@Override
@@ -82,10 +80,11 @@ public class HttpProxyHandshakeHandlerNew2 extends SimpleChannelInboundHandler<H
 			
 			// 打通全链路后，给客户端发送200完成请求，告知可以发送业务数据
 			full.connect().addListener(f -> {
-				client2ProxyCtx.pipeline().firstContext().writeAndFlush(Unpooled.wrappedBuffer(ConnectedLine.getBytes()));
+				client2ProxyCtx.pipeline().firstContext().writeAndFlush(Unpooled.wrappedBuffer(HttpConstant.ConnectedLine.getBytes()));
 			});
     	} else {
     		log.info("HTTP connect");
+    		pipeHolder.setProtocol(Protocol.HTTP);
     		BackPipe back = new BackPipe(host, port, false);
     		FullPipe full = new FullPipe(new FrontPipe(client2ProxyCtx.channel()), back, eventHandler, pipeHolder);
     		full.connect().addListener(f-> {
@@ -97,7 +96,7 @@ public class HttpProxyHandshakeHandlerNew2 extends SimpleChannelInboundHandler<H
 	private int guessPort(String method, String[] hostAndPort) {
 		if (hostAndPort.length == 2) {
 			return Integer.parseInt(hostAndPort[1]);
-		} else if (HTTPS_HANDSHAKE_METHOD.equalsIgnoreCase(method)) {
+		} else if (HttpConstant.HTTPS_HANDSHAKE_METHOD.equalsIgnoreCase(method)) {
 			return HttpConstant.DEFAULT_HTTPS_PORT;
 		} else {
 			return HttpConstant.DEFAULT_HTTP_PORT;
