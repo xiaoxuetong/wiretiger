@@ -8,7 +8,7 @@ import org.hum.wiretiger.proxy.facade.enumtype.WiretigerPipeStatus;
 import org.hum.wiretiger.proxy.facade.event.EventListener;
 import org.hum.wiretiger.proxy.facade.event.WiretigerPipe;
 import org.hum.wiretiger.proxy.facade.event.WiretigerSession;
-import org.hum.wiretiger.proxy.pipe.bean.WtPipeHolder;
+import org.hum.wiretiger.proxy.pipe.bean.WtPipeContext;
 import org.hum.wiretiger.proxy.session.bean.WtSession;
 
 public class EventHandler {
@@ -23,65 +23,75 @@ public class EventHandler {
 		this.listeners.addAll(listeners);
 	}
 
-	public void fireConnectEvent(WtPipeHolder pipe) {
+	public void fireConnectEvent(WtPipeContext context) {
 		for (EventListener listener : listeners) {
-			listener.onConnect(convert(pipe));
+			listener.onConnect(convert(context));
 		}
 	}
 
-	public void fireReadEvent(WtPipeHolder pipe) {
+	@Deprecated
+	public void fireReadEvent(WtPipeContext context) {
 		for (EventListener listener : listeners) {
-			listener.onPipeStatusChange(convert(pipe));
+			listener.onPipeStatusChange(convert(context));
 		}
 	}
 
-	public void fireReceiveEvent(WtPipeHolder pipe) {
+	@Deprecated
+	public void fireReceiveEvent(WtPipeContext context) {
 		for (EventListener listener : listeners) {
-			listener.onPipeStatusChange(convert(pipe));
+			listener.onPipeStatusChange(convert(context));
 		}
 	}
 
-	public void fireForwardEvent(WtPipeHolder pipe) {
+	@Deprecated
+	public void fireForwardEvent(WtPipeContext context) {
 		for (EventListener listener : listeners) {
-			listener.onPipeStatusChange(convert(pipe));
+			listener.onPipeStatusChange(convert(context));
 		}
 	}
 
-	public void fireFlushEvent(WtPipeHolder pipe) {
+	@Deprecated
+	public void fireFlushEvent(WtPipeContext context) {
 		for (EventListener listener : listeners) {
-			listener.onPipeStatusChange(convert(pipe));
-		}
-	}
-
-	public void fireDisconnectEvent(WtPipeHolder pipe) {
-		for (EventListener listener : listeners) {
-			listener.onDisconnect(convert(pipe));
-		}
-	}
-
-	public void fireErrorEvent(WtPipeHolder pipe) {
-		for (EventListener listener : listeners) {
-			listener.onError(convert(pipe));
-		}
-	}
-
-	public void fireNewSessionEvent(WtPipeHolder pipe, WtSession session) {
-		for (EventListener listener : listeners) {
-			listener.onNewSession(convert(pipe), convert(session));
+			listener.onPipeStatusChange(convert(context));
 		}
 	}
 	
-	private WiretigerPipe convert(WtPipeHolder holder) {
+	public void fireChangeEvent(WtPipeContext context) {
+		for (EventListener listener : listeners) {
+			listener.onPipeStatusChange(convert(context));
+		}
+	}
+
+	public void fireDisconnectEvent(WtPipeContext context) {
+		for (EventListener listener : listeners) {
+			listener.onDisconnect(convert(context));
+		}
+	}
+
+	public void fireErrorEvent(WtPipeContext context) {
+		for (EventListener listener : listeners) {
+			listener.onError(convert(context));
+		}
+	}
+
+	public void fireNewSessionEvent(WtPipeContext context, WtSession session) {
+		for (EventListener listener : listeners) {
+			listener.onNewSession(convert(context), convert(session));
+		}
+	}
+	
+	private WiretigerPipe convert(WtPipeContext context) {
 		WiretigerPipe pipeVo = new WiretigerPipe();
-		InetSocketAddress source = (InetSocketAddress) holder.getClientChannel().remoteAddress();
+		InetSocketAddress source = (InetSocketAddress) context.getClientChannel().remoteAddress();
 		pipeVo.setSourceHost(source.getHostName());
 		pipeVo.setSourcePort(source.getPort());
-		pipeVo.setProtocol(holder.getProtocol());
-		pipeVo.setPipeId(holder.getId() + "");
-		pipeVo.setStatus(WiretigerPipeStatus.getEnum(holder.getCurrentStatus().getCode()));
+		pipeVo.setProtocol(context.getProtocol());
+		pipeVo.setPipeId(context.getId() + "");
+		pipeVo.setStatus(WiretigerPipeStatus.getEnum(context.getCurrentStatus().getCode()));
 		
-		if (holder.getServerChannel() != null) {
-			InetSocketAddress target = (InetSocketAddress) holder.getServerChannel().remoteAddress();
+		if (context.getServerChannel() != null) {
+			InetSocketAddress target = (InetSocketAddress) context.getServerChannel().remoteAddress();
 			pipeVo.setTargetHost(target.getHostName());
 			pipeVo.setTargetPort(target.getPort());
 		}

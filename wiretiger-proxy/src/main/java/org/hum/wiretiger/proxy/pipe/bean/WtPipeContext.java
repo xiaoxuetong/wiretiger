@@ -14,17 +14,19 @@ import io.netty.channel.Channel;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpRequest;
 
-/**
- * 这个与其叫做Holder，更像是上下文
- * @author hudaming
- */
-public class WtPipeHolder {
+public class WtPipeContext {
 
+	private String sourceHost;
+	private int sourcePort;
+	private String targetHost;
+	private int targetPort;
 	private WtPipe pipe = new WtPipe();
 	
-	public WtPipeHolder(int id) {
+	public WtPipeContext(int id, Channel clientChannel) {
 		pipe.setId(id);
 		pipe.addStatus(PipeStatus.Init);
+		pipe.setSourceCtx(clientChannel);
+		addEvent(PipeEventType.Init, "连接初始化");
 	}
 	
 	public void setName(String name) {
@@ -33,11 +35,6 @@ public class WtPipeHolder {
 	
 	public String getName() {
 		return this.pipe.getName();
-	}
-	
-	public void registClient(Channel channel) {
-		this.pipe.setSourceCtx(channel);
-		this.addEvent(PipeEventType.ClientConnect, "客户端上线");
 	}
 	
 	public void registServer(Channel channel) {
@@ -123,6 +120,32 @@ public class WtPipeHolder {
 		return status.get(0);
 	}
 	
+	public void setSource(String host, int port) {
+		this.sourceHost = host;
+		this.sourcePort = port;
+	}
+	
+	public void setTarget(String host, int port) {
+		this.targetHost = host;
+		this.targetPort = port;
+	}
+	
+	public String getSourceHost() {
+		return sourceHost;
+	}
+
+	public int getSourcePort() {
+		return sourcePort;
+	}
+
+	public String getTargetHost() {
+		return targetHost;
+	}
+
+	public int getTargetPort() {
+		return targetPort;
+	}
+
 	public boolean isHttps() {
 		return pipe.getProtocol() == Protocol.HTTPS;
 	}

@@ -27,6 +27,7 @@ public class BackPipe {
 	private Bootstrap bootStrap = null;
 	private Channel channel;
 	private SslHandler sslHandler;
+	private volatile boolean acitve = false;
 	static {
 		try {
 			SsslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build();
@@ -73,9 +74,13 @@ public class BackPipe {
 			}
 		});
 	}
-
+	
+	public boolean isActive() {
+		return acitve;
+	}
 
 	public ChannelFuture connect() {
+		acitve = true;
 		ChannelFuture channelFuture = bootStrap.connect(host, port);
 		this.channel = channelFuture.channel();
 		return channelFuture;

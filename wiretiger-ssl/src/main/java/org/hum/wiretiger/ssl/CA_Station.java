@@ -19,10 +19,10 @@ public class CA_Station {
 		if (futureTask == null) {
 			futureTask = new FutureTask<byte[]>(new CA_Creator(domain));
 			FutureTask<byte[]> task = CERT_CACHE.putIfAbsent(domain, futureTask);
-			if (task == null) {
-				task = futureTask;
-				task.run();
+			if (task != null) {
+				futureTask = task;
 			}
+			futureTask.run();
 		}
 		try {
 			return new ByteArrayInputStream(futureTask.get());
